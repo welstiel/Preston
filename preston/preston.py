@@ -43,10 +43,10 @@ class Preston:
 
     BASE_URL = "https://esi.evetech.net"
     SPEC_URL = BASE_URL + "/_{}/swagger.json"
-    OAUTH_URL = "https://login.eveonline.com/oauth/"
+    OAUTH_URL = "https://login.eveonline.com/v2/oauth/"
     TOKEN_URL = OAUTH_URL + "token"
     AUTHORIZE_URL = OAUTH_URL + "authorize"
-    WHOAMI_URL = OAUTH_URL + "verify"
+    WHOAMI_URL = BASE_URL + "/verify"
     METHODS = ["get", "post", "put", "delete"]
     OPERATION_ID_KEY = "operationId"
     VAR_REPLACE_REGEX = r"{(\w+)}"
@@ -57,7 +57,8 @@ class Preston:
         self.version = kwargs.get("version", "latest")
         self.session = requests.Session()
         self.session.headers.update(
-            {"User-Agent": kwargs.get("user_agent", ""), "Accept": "application/json"}
+            {"User-Agent": kwargs.get("user_agent", ""),
+             "Accept": "application/json"}
         )
         self.client_id = kwargs.get("client_id")
         self.client_secret = kwargs.get("client_secret")
@@ -100,7 +101,8 @@ class Preston:
             new access token and expiration time (from now)
         """
         headers = self._get_authorization_headers()
-        data = {"grant_type": "refresh_token", "refresh_token": self.refresh_token}
+        data = {"grant_type": "refresh_token",
+                "refresh_token": self.refresh_token}
         r = self.session.post(self.TOKEN_URL, headers=headers, data=data)
         response_data = r.json()
         return (response_data["access_token"], response_data["expires_in"])
@@ -119,7 +121,8 @@ class Preston:
         ).decode("latin-1")
         auth = auth.replace("\n", "").replace(" ", "")
         auth = "Basic {}".format(auth)
-        headers = {"Authorization": auth}
+        headers = {"Authorization": auth, "Content-Type": "application/x-www-form-urlencoded",
+                   "Host": "login.eveonline.com"}
         return headers
 
     def _try_refresh_access_token(self) -> None:
@@ -169,7 +172,7 @@ class Preston:
         """
         return (
             f"{self.AUTHORIZE_URL}?response_type=code&redirect_uri={self.callback_url}"
-            f"&client_id={self.client_id}&scope={self.scope}"
+            f"&client_id={self.client_id}&scope={self.scope}&state=123456"
         )
 
     def authenticate(self, code: str) -> "Preston":
